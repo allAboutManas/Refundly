@@ -134,7 +134,7 @@ export function AccountFormModal({
 
         <Field label="Profile name">
           <Input
-            placeholder="Manas"
+            placeholder="Tony Stark"
             value={profileName}
             onChange={(e) => setProfileName(e.target.value)}
           />

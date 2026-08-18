@@ -53,7 +53,7 @@ export default function ProfileSettingsPage() {
           <Input value={user?.email ?? ''} disabled />
         </Field>
         <Field label="Full name">
-          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Manas" />
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Tony Stark" />
         </Field>
         <Field label="Timezone" hint="Used to schedule reminders at the right local time.">
           <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>

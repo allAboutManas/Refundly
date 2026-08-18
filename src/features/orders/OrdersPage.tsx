@@ -103,7 +103,7 @@ export default function OrdersPage() {
       )}
 
       {isLoading ? (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {Array.from({ length: 4 }, (_, i) => (
             <OrderCardSkeleton key={i} />
           ))}
@@ -129,7 +129,7 @@ export default function OrdersPage() {
       ) : filtered.length === 0 ? (
         <EmptyState icon="🔍" title="No matching orders" description="Try a different search or filter." />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {filtered.map((i) => (
             <OrderCard key={i.order.id} order={i.order} today={today} platforms={platforms} />
           ))}

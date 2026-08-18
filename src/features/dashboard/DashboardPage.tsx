@@ -68,7 +68,7 @@ export default function DashboardPage() {
     return (
       <>
         <PageHeader title="Loading…" />
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {Array.from({ length: 2 }, (_, i) => (
             <OrderCardSkeleton key={i} />
           ))}
@@ -199,7 +199,7 @@ export default function DashboardPage() {
             View all
           </Link>
         </div>
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {recent.map((i) => (
             <OrderCard key={i.order.id} order={i.order} today={today} platforms={platforms} />
           ))}

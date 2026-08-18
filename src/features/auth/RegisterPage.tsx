@@ -61,7 +61,7 @@ export default function RegisterPage() {
         <Field label="Full name">
           <Input
             autoComplete="name"
-            placeholder="Manas"
+            placeholder="Tony Stark"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
           />
