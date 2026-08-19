@@ -39,19 +39,32 @@ export function actionItems(items: OrderWithState[]): OrderWithState[] {
     )
 }
 
-/** Money + counts summary for the dashboard stats row. */
+/**
+ * Money + counts summary for the dashboard.
+ *
+ * The two headline figures track the user's money end-to-end:
+ *  - `totalPendingAmount` — every rupee still to be recovered (all orders that
+ *    aren't completed yet). Goes up when an order is added, down when one is
+ *    deleted or marked received.
+ *  - `completedAmount` — every rupee actually recovered. Goes up when an order's
+ *    refund is marked received (moving that amount out of pending).
+ */
 export function computeStats(items: OrderWithState[], today: PlainDate) {
   let pendingAmount = 0
   let dueThisWeekAmount = 0
   let completedAmount = 0
   let activeCount = 0
+  let totalPendingAmount = 0
+  let completedCount = 0
 
   for (const { order, state } of items) {
     if (state.status === 'COMPLETED') {
       completedAmount += order.refund?.actual_refund_amount ?? order.refund_amount
+      completedCount++
       continue
     }
     activeCount++
+    totalPendingAmount += order.refund_amount
     if (state.status === 'REFUND_PENDING' || state.status === 'REFUND_OVERDUE') {
       pendingAmount += order.refund_amount
       const expected = order.refund?.expected_refund_date
@@ -62,7 +75,14 @@ export function computeStats(items: OrderWithState[], today: PlainDate) {
     }
   }
 
-  return { pendingAmount, dueThisWeekAmount, completedAmount, activeCount }
+  return {
+    pendingAmount,
+    dueThisWeekAmount,
+    completedAmount,
+    activeCount,
+    totalPendingAmount,
+    completedCount,
+  }
 }
 
 /** Upcoming (and overdue) key dates across all active orders, sorted by date. */

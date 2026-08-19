@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Package, Star, Trash2, Wallet } from 'lucide-react'
+import { Package, Pencil, RotateCcw, Star, Trash2, Wallet } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { FullScreenLoader } from '@/components/FullScreenLoader'
 import {
@@ -23,6 +23,7 @@ import {
   useDeleteOrder,
   useMarkRefundRequested,
   useOrder,
+  useUndoRefundReceived,
   useUpdateReviewStatus,
   type OrderWithRefund,
 } from '@/api/orders'
@@ -52,11 +53,13 @@ export default function OrderDetailPage() {
   const reviewMut = useUpdateReviewStatus()
   const requestedMut = useMarkRefundRequested()
   const deleteMut = useDeleteOrder()
+  const undoMut = useUndoRefundReceived()
 
   const [deliveryOpen, setDeliveryOpen] = useState(false)
   const [refundOpen, setRefundOpen] = useState(false)
   const [receivedOpen, setReceivedOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [undoOpen, setUndoOpen] = useState(false)
   const [celebrate, setCelebrate] = useState(false)
 
   if (isLoading) return <FullScreenLoader />
@@ -114,8 +117,18 @@ export default function OrderDetailPage() {
     }
   }
 
+  async function confirmUndo() {
+    try {
+      await undoMut.mutateAsync(order!.id)
+      toast({ tone: 'success', title: 'Marked as not received', description: 'You can edit this order again.' })
+    } catch (e) {
+      toast({ tone: 'error', title: 'Could not update', description: friendlyError(e) })
+    }
+  }
+
   const showReviewCard = order.is_delivered && order.review_status === 'PENDING'
   const refund = order.refund
+  const isPaid = Boolean(refund?.refund_received)
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -151,6 +164,8 @@ export default function OrderDetailPage() {
           onReceived={() => setReceivedOpen(true)}
           onFollowUp={markRequested}
           followUpBusy={requestedMut.isPending}
+          onUndo={() => setUndoOpen(true)}
+          undoBusy={undoMut.isPending}
         />
       </div>
 
@@ -226,7 +241,17 @@ export default function OrderDetailPage() {
           {order.delivery_date && <Row label="Delivered" value={formatDateLong(order.delivery_date)} />}
           {order.notes && <Row label="Notes" value={order.notes} />}
         </dl>
-        <div className="mt-4 border-t border-border pt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+          {!isPaid && (
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Pencil className="size-4" />}
+              onClick={() => navigate(`/app/orders/${order.id}/edit`)}
+            >
+              Edit order
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -263,6 +288,14 @@ export default function OrderDetailPage() {
         description="This permanently removes the order and its refund history."
         confirmLabel="Delete"
       />
+      <ConfirmDialog
+        open={undoOpen}
+        onClose={() => setUndoOpen(false)}
+        onConfirm={confirmUndo}
+        title="Mark as not received?"
+        description="This reopens the order so you can edit it again. The recorded refund amount and date will be cleared."
+        confirmLabel="Undo"
+      />
     </div>
   )
 }
@@ -295,6 +328,8 @@ interface HeroProps {
   onReceived: () => void
   onFollowUp: () => void
   followUpBusy: boolean
+  onUndo: () => void
+  undoBusy: boolean
 }
 
 function NextActionCard({
@@ -306,6 +341,8 @@ function NextActionCard({
   onReceived,
   onFollowUp,
   followUpBusy,
+  onUndo,
+  undoBusy,
 }: HeroProps) {
   const base = 'rounded-lg border p-5'
 
@@ -389,6 +426,16 @@ function NextActionCard({
               ? `Completed on ${formatDateLong(order.refund.refund_received_date)}. Reminders stopped.`
               : 'This order is complete. Reminders stopped.'}
           </p>
+          <Button
+            className="mt-4"
+            variant="secondary"
+            size="sm"
+            onClick={onUndo}
+            loading={undoBusy}
+            leftIcon={<RotateCcw className="size-4" />}
+          >
+            Marked paid by mistake? Undo
+          </Button>
         </div>
       )
   }

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Plus, Star, Lock, Wallet } from 'lucide-react'
+import { ArrowRight, Plus, Star, Lock, Wallet, CheckCircle2 } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button, Card, EmptyState, OrderCardSkeleton } from '@/components/ui'
 import { cn } from '@/lib/cn'
@@ -106,11 +106,29 @@ export default function DashboardPage() {
         }
       />
 
-      {/* Stats */}
-      <div className="no-scrollbar -mx-1 mb-6 flex gap-3 overflow-x-auto px-1 sm:grid sm:grid-cols-4">
-        <StatCard label="Refunds pending" value={formatINR(stats.pendingAmount)} />
+      {/* Money headline — two hero cards. Both recompute automatically whenever
+          an order is added, deleted or marked received. */}
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <HeroStat
+          label="Pending Recovery"
+          value={formatINR(stats.totalPendingAmount)}
+          subtitle={`${stats.activeCount} order${stats.activeCount === 1 ? '' : 's'} in progress`}
+          icon={Wallet}
+          tone="primary"
+        />
+        <HeroStat
+          label="Recovered"
+          value={formatINR(stats.completedAmount)}
+          subtitle={`${stats.completedCount} refund${stats.completedCount === 1 ? '' : 's'} received`}
+          icon={CheckCircle2}
+          tone="success"
+        />
+      </div>
+
+      {/* Secondary stats */}
+      <div className="no-scrollbar -mx-1 mb-6 flex gap-3 overflow-x-auto px-1 sm:grid sm:grid-cols-3">
+        <StatCard label="Awaiting refund" value={formatINR(stats.pendingAmount)} />
         <StatCard label="Due this week" value={formatINR(stats.dueThisWeekAmount)} />
-        <StatCard label="Completed" value={formatINR(stats.completedAmount)} tone="success" />
         <StatCard label="Active orders" value={String(stats.activeCount)} />
       </div>
 
@@ -214,6 +232,40 @@ function labelForDate(date: PlainDate, today: PlainDate): string {
   return rel.includes('day') && !['Today', 'Tomorrow', 'Yesterday'].includes(rel)
     ? formatDateShort(date)
     : rel
+}
+
+function HeroStat({
+  label,
+  value,
+  subtitle,
+  icon: Icon,
+  tone,
+}: {
+  label: string
+  value: string
+  subtitle: string
+  icon: typeof Wallet
+  tone: 'primary' | 'success'
+}) {
+  return (
+    <Card padded={false}>
+      <div className="p-4">
+        <div
+          className={cn(
+            'mb-2.5 grid size-9 place-items-center rounded-xl bg-surface-2',
+            tone === 'success' ? 'text-success' : 'text-primary',
+          )}
+        >
+          <Icon className="size-[18px]" />
+        </div>
+        <p className={cn('text-2xl font-extrabold', tone === 'success' ? 'text-success' : 'text-text')}>
+          {value}
+        </p>
+        <p className="mt-1 text-sm font-bold text-text-2">{label}</p>
+        <p className="mt-0.5 text-xs text-text-3">{subtitle}</p>
+      </div>
+    </Card>
+  )
 }
 
 function StatCard({

@@ -17,6 +17,7 @@ const HowItWorksPage = lazy(() => import('@/features/onboarding/HowItWorksPage')
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'))
 const OrdersPage = lazy(() => import('@/features/orders/OrdersPage'))
 const AddOrderPage = lazy(() => import('@/features/orders/AddOrderPage'))
+const EditOrderPage = lazy(() => import('@/features/orders/EditOrderPage'))
 const OrderDetailPage = lazy(() => import('@/features/orders/OrderDetailPage'))
 const TimelinePage = lazy(() => import('@/features/timeline/TimelinePage'))
 const NotificationsPage = lazy(() => import('@/features/notifications/NotificationsPage'))
@@ -59,6 +60,7 @@ export default function App() {
                 <Route path="orders" element={<OrdersPage />} />
                 <Route path="orders/new" element={<AddOrderPage />} />
                 <Route path="orders/:id" element={<OrderDetailPage />} />
+                <Route path="orders/:id/edit" element={<EditOrderPage />} />
                 <Route path="timeline" element={<TimelinePage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="accounts" element={<AccountsPage />} />

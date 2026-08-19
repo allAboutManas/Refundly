@@ -96,6 +96,10 @@ export interface CreateOrderInput {
   currency?: string
   order_date?: string | null
   delivery_date?: string | null
+  // For back-dated ("existing") orders that were already delivered when added.
+  is_delivered?: boolean
+  return_window_close_date?: string | null
+  review_status?: OrderRow['review_status']
   notes?: string | null
 }
 
@@ -113,6 +117,11 @@ export function useCreateOrder() {
       await appendOrderEvent(data.id, 'ORDER_CREATED', data.order_date, {
         product_name: data.product_name,
       })
+      // Existing order added as already-delivered → record the delivery event too,
+      // so the timeline and reminders line up with the real dates.
+      if (data.is_delivered && data.delivery_date) {
+        await appendOrderEvent(data.id, 'DELIVERED', data.delivery_date)
+      }
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ordersKey(user?.id) }),
@@ -282,6 +291,36 @@ export function useMarkRefundReceived() {
       })
       await appendOrderEvent(input.id, 'COMPLETED', input.receivedDate)
       return input.id
+    },
+    onSuccess: (id) => invalidate(id),
+  })
+}
+
+/**
+ * Undo a "refund received" mark (paid by mistake). Clears the received flags and
+ * removes the terminal timeline events so the order reopens and can be edited again.
+ */
+export function useUndoRefundReceived() {
+  const invalidate = useInvalidateOrder()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('refund_details')
+        .update({
+          refund_received: false,
+          refund_received_at: null,
+          refund_received_date: null,
+          actual_refund_amount: null,
+          payment_reference: null,
+        })
+        .eq('order_id', id)
+      if (error) throw error
+      await supabase
+        .from('order_events')
+        .delete()
+        .eq('order_id', id)
+        .in('event_type', ['REFUND_RECEIVED', 'COMPLETED'])
+      return id
     },
     onSuccess: (id) => invalidate(id),
   })

@@ -43,7 +43,9 @@ interface OrderRow {
   is_delivered: boolean
   return_window_close_date: string | null
   review_status: OrderView['reviewStatus']
-  refund_details: RefundRow[] | null
+  // PostgREST returns a single object for the 1:1 embed (order_id is unique),
+  // but older data / array shapes are handled defensively below.
+  refund_details: RefundRow | RefundRow[] | null
 }
 
 const DEFAULT_PREFS: ReminderPrefs = {
@@ -130,7 +132,9 @@ Deno.serve(async (req) => {
         }
       : DEFAULT_PREFS
 
-    const refund = order.refund_details?.[0] ?? null
+    const refund = Array.isArray(order.refund_details)
+      ? (order.refund_details[0] ?? null)
+      : (order.refund_details ?? null)
     const view: OrderView = {
       orderDate: order.order_date,
       isDelivered: order.is_delivered,
@@ -228,6 +232,17 @@ Deno.serve(async (req) => {
   return json({ ok: true, created, emailsSent, pushSent })
 })
 
+// Base64-encode a UTF-8 string, wrapped at 76 chars per RFC 2045.
+function toBase64Mime(text: string): string {
+  const bytes = new TextEncoder().encode(text)
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return (btoa(binary).match(/.{1,76}/g) ?? []).join('\r\n')
+}
+
 async function sendEmailSmtp(
   client: SMTPClient | null,
   from: string,
@@ -237,12 +252,25 @@ async function sendEmailSmtp(
 ): Promise<boolean> {
   if (!client) return false
   try {
+    // Send both parts as base64. denomailer's default quoted-printable encoder
+    // leaves literal "=20" artifacts in some clients (e.g. Gmail); base64 is
+    // decoded reliably everywhere.
     await client.send({
       from,
       to,
       subject,
-      content: 'Open this email in an HTML-capable client to view it.',
-      html,
+      mimeContent: [
+        {
+          mimeType: 'text/plain; charset=utf-8',
+          content: toBase64Mime('Open this email in an HTML-capable client to view it.'),
+          transferEncoding: 'base64',
+        },
+        {
+          mimeType: 'text/html; charset=utf-8',
+          content: toBase64Mime(html),
+          transferEncoding: 'base64',
+        },
+      ],
     })
     return true
   } catch {
